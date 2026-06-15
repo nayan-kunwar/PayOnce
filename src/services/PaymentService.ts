@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { redis } from "../db/redis.js";
 import { createPaymentTransaction } from "../db/transactions/createPaymentTransaction.js";
 import {
   IdempotencyConflictError,
@@ -66,6 +67,7 @@ class PaymentService {
     };
     const requestHash = hashRequestBody(data);
 
+    // Initial check (fast, no lock)
     const cachedValue = await idempotencyCache.get(scope);
     if (cachedValue) {
       if (cachedValue.requestHash !== requestHash) {
@@ -75,56 +77,88 @@ class PaymentService {
       return { fromCache: true, payment: cachedValue.payment };
     }
 
-    const existingResult = await this.resolveExistingRecord(scope, requestHash);
-    if (existingResult) {
-      return existingResult;
+    // Acquire lock for this customerId + idempotencyKey
+    const lockKey = `lock:payment:${scope.customerId}:${scope.idempotencyKey}`;
+    let acquired = false;
+    const maxRetries = 40;
+    const retryDelayMs = 50;
+
+    for (let i = 0; i < maxRetries; i++) {
+      const res = await redis.set(lockKey, "locked", "PX", 5000, "NX");
+      if (res === "OK") {
+        acquired = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
     }
-
-    const now = new Date();
-    const payment: Payment = {
-      id: generatePaymentId(),
-      amount: data.amount,
-      customerId: data.customerId,
-      status: "pending",
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    const expiresAt = new Date(
-      Date.now() + env.IDEMPOTENCY_TTL_SECONDS * 1000,
-    );
 
     try {
-      await createPaymentTransaction({
-        payment,
-        scope,
-        requestHash,
-        expiresAt,
-      });
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        const duplicateResult = await this.resolveExistingRecord(
-          scope,
-          requestHash,
-        );
-
-        if (duplicateResult) {
-          return duplicateResult;
+      // Re-check cache after acquiring lock
+      const doubleCheckCachedValue = await idempotencyCache.get(scope);
+      if (doubleCheckCachedValue) {
+        if (doubleCheckCachedValue.requestHash !== requestHash) {
+          throw new IdempotencyConflictError();
         }
 
-        throw new IdempotencyConflictError();
+        return { fromCache: true, payment: doubleCheckCachedValue.payment };
       }
 
-      throw error;
+      // Re-check database
+      const existingResult = await this.resolveExistingRecord(scope, requestHash);
+      if (existingResult) {
+        return existingResult;
+      }
+
+      const now = new Date();
+      const payment: Payment = {
+        id: generatePaymentId(),
+        amount: data.amount,
+        customerId: data.customerId,
+        status: "pending",
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const expiresAt = new Date(
+        Date.now() + env.IDEMPOTENCY_TTL_SECONDS * 1000,
+      );
+
+      try {
+        await createPaymentTransaction({
+          payment,
+          scope,
+          requestHash,
+          expiresAt,
+        });
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          const duplicateResult = await this.resolveExistingRecord(
+            scope,
+            requestHash,
+          );
+
+          if (duplicateResult) {
+            return duplicateResult;
+          }
+
+          throw new IdempotencyConflictError();
+        }
+
+        throw error;
+      }
+
+      await idempotencyCache.set(
+        scope,
+        { payment, requestHash },
+        env.IDEMPOTENCY_TTL_SECONDS,
+      );
+
+      return { fromCache: false, payment };
+    } finally {
+      if (acquired) {
+        await redis.del(lockKey).catch(() => {});
+      }
     }
-
-    await idempotencyCache.set(
-      scope,
-      { payment, requestHash },
-      env.IDEMPOTENCY_TTL_SECONDS,
-    );
-
-    return { fromCache: false, payment };
   }
 
   async getPaymentById(id: string): Promise<Payment> {
