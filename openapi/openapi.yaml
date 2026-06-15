@@ -1,0 +1,505 @@
+openapi: 3.1.0
+info:
+  title: PayOnce API
+  version: 1.0.0
+  description: |
+    PayOnce is a production-grade payment API with customer-scoped idempotency,
+    PostgreSQL durability, and Redis-backed caching.
+
+    ## Authentication
+
+    All `/api/v1/*` endpoints require an API key:
+
+    ```http
+    Authorization: Bearer pk_live_xxxxxxxxxxxx
+    ```
+
+    You may also send the key via `X-Api-Key`.
+
+    ### Obtaining API keys
+
+    1. Create an account at [/login](/login)
+    2. Open the [Dashboard](/dashboard)
+    3. Create a personal API key (shown once — copy and store it securely)
+
+    Server-configured keys (`API_KEYS`) are also accepted for integrations.
+
+    ## Idempotency
+
+    `POST /api/v1/payments` requires an `Idempotency-Key` header. Reusing the same
+    key with the same body returns the cached payment (`fromCache: true`).
+
+  contact:
+    name: PayOnce
+    url: https://github.com/nayan-kunwar/PayOnce
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://payonce.onrender.com
+    description: Production
+
+tags:
+  - name: Payments
+    description: Create and manage payments
+  - name: System
+    description: Health and readiness probes
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+      description: |
+        Use your PayOnce API key as the bearer token.
+
+        Example: `Authorization: Bearer pk_live_abc123…`
+
+  parameters:
+    PaymentId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: pay_550e8400-e29b-41d4-a716-446655440000
+      description: Payment ID returned when the payment was created.
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        maxLength: 255
+        example: order_abc_001
+      description: Unique key for idempotent payment creation.
+
+  schemas:
+    PaymentStatus:
+      type: string
+      enum: [pending, completed, failed, cancelled]
+
+    Payment:
+      type: object
+      required: [id, amount, customerId, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          example: pay_550e8400-e29b-41d4-a716-446655440000
+        amount:
+          type: integer
+          minimum: 1
+          description: Amount in smallest currency unit (e.g. cents).
+          example: 1000
+        customerId:
+          type: string
+          example: cust_123
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-06-15T10:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-06-15T10:00:00.000Z"
+
+    CreatePaymentRequest:
+      type: object
+      required: [amount, customerId]
+      properties:
+        amount:
+          type: integer
+          minimum: 1
+          example: 1000
+        customerId:
+          type: string
+          minLength: 1
+          example: cust_123
+
+    UpdatePaymentStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+
+    ApiError:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+          const: false
+        message:
+          type: string
+        code:
+          type: string
+        errors:
+          description: Validation details when present.
+          oneOf:
+            - type: array
+            - type: object
+
+    CreatePaymentResponse:
+      type: object
+      required: [success, fromCache, payment]
+      properties:
+        success:
+          type: boolean
+          const: true
+        fromCache:
+          type: boolean
+          description: True when the idempotency key matched a prior request.
+        payment:
+          $ref: "#/components/schemas/Payment"
+
+    GetPaymentResponse:
+      type: object
+      required: [success, payment]
+      properties:
+        success:
+          type: boolean
+          const: true
+        payment:
+          $ref: "#/components/schemas/Payment"
+
+    ListPaymentsResponse:
+      type: object
+      required: [success, payments]
+      properties:
+        success:
+          type: boolean
+          const: true
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payment"
+
+    UpdatePaymentStatusResponse:
+      type: object
+      required: [success, payment]
+      properties:
+        success:
+          type: boolean
+          const: true
+        payment:
+          $ref: "#/components/schemas/Payment"
+
+    HealthResponse:
+      type: object
+      required: [success, status]
+      properties:
+        success:
+          type: boolean
+          const: true
+        status:
+          type: string
+          example: ok
+
+    ReadyResponse:
+      type: object
+      required: [success, status]
+      properties:
+        success:
+          type: boolean
+        status:
+          type: string
+          enum: [ready, not_ready]
+        checks:
+          type: object
+          properties:
+            postgres:
+              type: boolean
+            redis:
+              type: boolean
+
+  responses:
+    Unauthorized:
+      description: Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            success: false
+            message: Invalid or missing API key
+            code: UNAUTHORIZED
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            success: false
+            message: Idempotency-Key header is required
+            code: VALIDATION_ERROR
+
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            success: false
+            message: Too many requests, please try again later
+            code: RATE_LIMIT_EXCEEDED
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            success: false
+            message: Payment not found
+            code: NOT_FOUND
+
+    InternalError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            success: false
+            message: Internal server error
+            code: INTERNAL_SERVER_ERROR
+
+paths:
+  /api/v1/payments:
+    post:
+      tags: [Payments]
+      summary: Create payment
+      description: |
+        Creates a new payment. Requires `Idempotency-Key`. Duplicate keys with
+        the same body return the existing payment with `fromCache: true`.
+      operationId: createPayment
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentRequest"
+            example:
+              amount: 1000
+              customerId: cust_123
+      responses:
+        "201":
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePaymentResponse"
+              example:
+                success: true
+                fromCache: false
+                payment:
+                  id: pay_550e8400-e29b-41d4-a716-446655440000
+                  amount: 1000
+                  customerId: cust_123
+                  status: pending
+                  createdAt: "2026-06-15T10:00:00.000Z"
+                  updatedAt: "2026-06-15T10:00:00.000Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Idempotency conflict (same key, different body)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+              example:
+                success: false
+                message: Idempotency key was already used with a different request body
+                code: IDEMPOTENCY_CONFLICT
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    get:
+      tags: [Payments]
+      summary: List payments
+      description: Returns all payments ordered by creation time.
+      operationId: listPayments
+      responses:
+        "200":
+          description: Payment list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPaymentsResponse"
+              example:
+                success: true
+                payments:
+                  - id: pay_550e8400-e29b-41d4-a716-446655440000
+                    amount: 1000
+                    customerId: cust_123
+                    status: pending
+                    createdAt: "2026-06-15T10:00:00.000Z"
+                    updatedAt: "2026-06-15T10:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/payments/{id}:
+    get:
+      tags: [Payments]
+      summary: Retrieve payment
+      description: Fetch a single payment by ID.
+      operationId: getPayment
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Payment found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetPaymentResponse"
+              example:
+                success: true
+                payment:
+                  id: pay_550e8400-e29b-41d4-a716-446655440000
+                  amount: 1000
+                  customerId: cust_123
+                  status: pending
+                  createdAt: "2026-06-15T10:00:00.000Z"
+                  updatedAt: "2026-06-15T10:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/payments/{id}/status:
+    patch:
+      tags: [Payments]
+      summary: Update payment status
+      description: |
+        Updates payment status. Only valid transitions are allowed
+        (e.g. `pending` → `completed`, `failed`, or `cancelled`).
+      operationId: updatePaymentStatus
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePaymentStatusRequest"
+            example:
+              status: completed
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdatePaymentStatusResponse"
+              example:
+                success: true
+                payment:
+                  id: pay_550e8400-e29b-41d4-a716-446655440000
+                  amount: 1000
+                  customerId: cust_123
+                  status: completed
+                  createdAt: "2026-06-15T10:00:00.000Z"
+                  updatedAt: "2026-06-15T10:05:00.000Z"
+        "400":
+          description: Validation or invalid status transition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+              examples:
+                validation:
+                  value:
+                    success: false
+                    message: Invalid status update request
+                    code: VALIDATION_ERROR
+                transition:
+                  value:
+                    success: false
+                    message: "Cannot transition payment from 'completed' to 'pending'"
+                    code: INVALID_STATUS_TRANSITION
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      description: Liveness probe — process is running.
+      operationId: healthCheck
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                success: true
+                status: ok
+
+  /ready:
+    get:
+      tags: [System]
+      summary: Readiness check
+      description: Readiness probe — PostgreSQL and Redis connectivity.
+      operationId: readinessCheck
+      security: []
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+              example:
+                success: true
+                status: ready
+                checks:
+                  postgres: true
+                  redis: true
+        "503":
+          description: Not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+              example:
+                success: false
+                status: not_ready
+                checks:
+                  postgres: false
+                  redis: true

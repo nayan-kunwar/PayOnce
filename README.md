@@ -45,6 +45,8 @@ bun run dev
 
 Server runs at `http://localhost:3000`.
 
+Interactive API reference: **`/docs`** (OpenAPI 3.1 + Scalar — search, code samples, Try It).
+
 ### Docker (full stack)
 
 ```bash
@@ -64,6 +66,38 @@ All `/api/v1/*` routes require an API key:
 ```
 Authorization: Bearer dev-api-key
 ```
+
+### Get your own API key
+
+Use the website signup section (home page) or call:
+
+```http
+POST /api/keys
+Content-Type: application/json
+
+{
+  "email": "dev@example.com",
+  "label": "My app"
+}
+```
+
+You receive the full key once. Save it securely and use it on `/api/v1/*`.
+
+### User account and dashboard
+
+Use `GET /login` to create an account and log in. The app sets an HttpOnly session cookie.
+
+After login, open `GET /dashboard` to:
+
+- Create/list/revoke personal API keys (`/dashboard/api/keys`)
+- View usage analytics (`/dashboard/api/usage/*`)
+
+Auth endpoints:
+
+- `POST /auth/signup`
+- `POST /auth/login`
+- `GET /auth/me`
+- `POST /auth/logout`
 
 ### Create payment
 
@@ -135,12 +169,16 @@ Details: [docs/10-demo-ui-and-proxy](./docs/10-demo-ui-and-proxy/README.md).
 
 ## Testing
 
+Integration tests **truncate all tables** and flush Redis. They always use **local Docker** (`localhost:5433`), even if your `.env` points at Neon/Upstash — see `tests/setup.ts`.
+
 ```bash
 docker compose up -d postgres redis
 bun run migrate
 bun run test:all
 bun run typecheck
 ```
+
+Or one command: `bun run test:integration:local`
 
 ---
 
@@ -177,6 +215,9 @@ See [.env.example](./.env.example) for all options.
 | `REDIS_URL` | Redis connection string |
 | `API_KEYS` | Comma-separated API keys (server-only; not exposed to `/demo`) |
 | `DEMO_ENABLED` | Enable public demo API at `/demo/api` (default `true`; set `false` to disable) |
+| `SIGNUP_ENABLED` | Enable key signup endpoint at `/api/keys` (default `true`; set `false` to disable) |
+| `SESSION_COOKIE_NAME` | Cookie name for user session auth (default `payonce_session`) |
+| `SESSION_TTL_HOURS` | Session lifetime in hours (default 168) |
 | `IDEMPOTENCY_TTL_SECONDS` | Idempotency TTL (default 86400) |
 | `CORS_ORIGINS` | Allowed CORS origins |
 

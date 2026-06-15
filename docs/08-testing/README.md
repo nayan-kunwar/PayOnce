@@ -8,6 +8,8 @@
   - `tests/unit/payment.schema.test.ts`
 - Integration tests in `tests/integration/payments.test.ts` using `supertest`.
 - Test helpers in `tests/helpers/testUtils.ts` for DB/Redis reset.
+- `tests/setup.ts` forces local `DATABASE_URL` / `REDIS_URL` during tests so `.env` cloud credentials are never truncated.
+- `resetTestData()` refuses remote hosts (Neon, Upstash, etc.) as a second safety net.
 
 ## Coverage
 

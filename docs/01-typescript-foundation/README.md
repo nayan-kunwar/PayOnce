@@ -31,6 +31,7 @@ TypeScript gives compile-time safety for repositories, services, and API contrac
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection string |
 | `API_KEYS` | `dev-api-key` | Comma-separated API keys |
 | `DEMO_ENABLED` | `true` | Enable `/demo/api` routes for the public test UI |
+| `SIGNUP_ENABLED` | `true` | Enable `/api/keys` self-service signup |
 | `IDEMPOTENCY_TTL_SECONDS` | `86400` | Idempotency record TTL |
 | `CORS_ORIGINS` | empty | Comma-separated allowed origins |
 

@@ -1,9 +1,11 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import request from "supertest";
 
 import app from "../../src/app.js";
 import { redis } from "../../src/db/redis.js";
 import { resetTestData, testApiKey } from "../helpers/testUtils.js";
+
+setDefaultTimeout(15_000);
 
 const authHeader = {
   Authorization: `Bearer ${testApiKey}`,
@@ -31,6 +33,28 @@ describe("PayOnce integration", () => {
       .send({ amount: 1000, customerId: "cust_1" });
 
     expect(response.status).toBe(401);
+  });
+
+  test("accepts first bearer token when authorization has duplicate scalar values", async () => {
+    const response = await request(app)
+      .post("/api/v1/payments")
+      .set("Authorization", `Bearer ${testApiKey}, Bearer`)
+      .set("Idempotency-Key", "scalar-dup-auth")
+      .send({ amount: 1000, customerId: "cust_scalar" });
+
+    expect(response.status).toBe(201);
+    expect(response.body.success).toBe(true);
+  });
+
+  test("accepts x-api-key header", async () => {
+    const response = await request(app)
+      .post("/api/v1/payments")
+      .set("X-Api-Key", testApiKey)
+      .set("Idempotency-Key", "x-api-key-auth")
+      .send({ amount: 1000, customerId: "cust_x_api_key" });
+
+    expect(response.status).toBe(201);
+    expect(response.body.success).toBe(true);
   });
 
   test("creates payment and returns cached response for duplicate key", async () => {

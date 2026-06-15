@@ -22,6 +22,12 @@ export class UnauthorizedError extends AppError {
   }
 }
 
+export class ConflictError extends AppError {
+  constructor(message: string) {
+    super(message, 409, "CONFLICT");
+  }
+}
+
 export class NotFoundError extends AppError {
   constructor(message: string) {
     super(message, 404, "NOT_FOUND");

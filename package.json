@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test tests/unit",
     "test:integration": "bun test tests/integration",
-    "test:all": "bun test",
+    "test:all": "bun test tests",
+    "test:integration:local": "docker compose up -d postgres redis && bun run migrate && bun test tests/integration",
     "db:generate": "drizzle-kit generate"
   },
   "devDependencies": {
@@ -28,6 +29,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@scalar/express-api-reference": "^0.10.3",
     "cors": "^2.8.6",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",

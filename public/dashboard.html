@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PayOnce Dashboard</title>
+    <link rel="stylesheet" href="/dashboard.css" />
+  </head>
+  <body>
+    <main class="dashboard-shell">
+      <header class="panel">
+        <div>
+          <h1>Developer Dashboard</h1>
+          <p id="user-line" class="muted">Loading account...</p>
+        </div>
+        <div class="row">
+          <a class="link" href="/">Home</a>
+          <a class="link" href="/docs">API Reference</a>
+          <button id="logout-btn" type="button">Log out</button>
+        </div>
+      </header>
+
+      <section class="panel">
+        <h2>Personal API Keys</h2>
+        <form id="new-key-form" class="form-inline">
+          <input id="new-key-label" type="text" maxlength="80" placeholder="Label (optional)" />
+          <button type="submit">Create key</button>
+        </form>
+        <p id="key-status" class="muted">Create a key to use /api/v1 routes. Only key prefixes are shown in the list.</p>
+        <div id="created-key-box" class="created-key" hidden>
+          <div class="row created-key-header">
+            <strong>New key (shown once)</strong>
+            <button id="copy-created-key" type="button">Copy key</button>
+          </div>
+          <pre id="created-key-value"></pre>
+          <p class="muted created-key-hint">Paste this into the API Playground below to test immediately.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Prefix</th>
+                <th>Label</th>
+                <th>Created</th>
+                <th>Last used</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="keys-body">
+              <tr><td colspan="6" class="muted">Loading keys...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="playground">
+        <h2>API Playground</h2>
+        <p class="muted">Test your personal API key against <code>/api/v1</code> without leaving the dashboard.</p>
+
+        <div class="playground-row">
+          <select id="play-method" aria-label="HTTP method">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PATCH">PATCH</option>
+          </select>
+          <input id="play-path" type="text" value="/api/v1/payments" aria-label="Request path" />
+        </div>
+
+        <label class="field-label">
+          API key
+          <input id="play-key" type="password" placeholder="Paste your pk_live_… key" autocomplete="off" />
+        </label>
+
+        <label class="field-label" id="play-idempotency-wrap">
+          Idempotency-Key (POST only)
+          <input id="play-idempotency" type="text" placeholder="order_abc_001" />
+        </label>
+
+        <label class="field-label" id="play-body-wrap">
+          Request body (JSON)
+          <textarea id="play-body" rows="5">{
+  "amount": 1000,
+  "customerId": "cust_123"
+}</textarea>
+        </label>
+
+        <div class="row">
+          <button id="play-send" type="button" class="primary">Send request</button>
+          <button id="play-fill-list" type="button">Use GET list</button>
+          <button id="play-fill-create" type="button">Use POST create</button>
+        </div>
+        <p id="play-status" class="muted">Ready.</p>
+        <pre id="play-output" class="play-output">Response will appear here.</pre>
+      </section>
+
+      <section class="grid-2">
+        <article class="panel">
+          <h2>Usage Summary</h2>
+          <div id="usage-summary" class="kv-list"></div>
+        </article>
+
+        <article class="panel">
+          <h2>Usage by Key</h2>
+          <ul id="usage-by-key" class="list"></ul>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Recent Requests</h2>
+        <ul id="usage-recent" class="list"></ul>
+      </section>
+    </main>
+    <script src="/dashboard.js" type="module"></script>
+  </body>
+</html>

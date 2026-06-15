@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PayOnce Login</title>
+    <link rel="stylesheet" href="/dashboard.css" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <section class="panel">
+        <h1>PayOnce Account</h1>
+        <p>Create an account or log in to manage personal API keys.</p>
+
+        <div class="auth-tabs">
+          <button id="tab-signup" class="active" type="button">Sign up</button>
+          <button id="tab-login" type="button">Log in</button>
+        </div>
+
+        <form id="auth-form" class="form">
+          <label>
+            Email
+            <input id="auth-email" type="email" required placeholder="dev@example.com" />
+          </label>
+          <label id="name-field">
+            Name (optional)
+            <input id="auth-name" type="text" maxlength="80" placeholder="Nayan" />
+          </label>
+          <label>
+            Password
+            <input id="auth-password" type="password" minlength="8" required />
+          </label>
+          <button id="auth-submit" class="primary" type="submit">Create account</button>
+          <p id="auth-status" class="muted">Create an account to continue.</p>
+        </form>
+
+        <a class="link" href="/">Back to home</a>
+      </section>
+    </main>
+    <script src="/dashboard.js" type="module"></script>
+  </body>
+</html>

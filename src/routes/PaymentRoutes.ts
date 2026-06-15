@@ -7,6 +7,7 @@ import {
   globalRateLimiter,
 } from "../middleware/rateLimiter.js";
 import { requireIdempotencyKey } from "../middleware/requireIdempotencyKey.js";
+import { usageTracker } from "../middleware/usageTracker.js";
 import { validateCreatePayment } from "../middleware/validateCreatePayment.js";
 import { validateUpdatePaymentStatus } from "../middleware/validateUpdatePaymentStatus.js";
 
@@ -14,6 +15,7 @@ const router = Router();
 
 router.use(apiKeyAuth);
 router.use(globalRateLimiter);
+router.use(usageTracker);
 
 router.post(
   "/payments",

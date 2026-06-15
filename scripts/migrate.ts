@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -9,14 +9,20 @@ const databaseUrl =
 
 async function migrate() {
   const pool = new pg.Pool({ connectionString: databaseUrl });
-  const migrationPath = path.join(
+  const migrationsDir = path.join(
     path.dirname(fileURLToPath(import.meta.url)),
-    "../drizzle/migrations/0000_init.sql",
+    "../drizzle/migrations",
   );
-  const sql = readFileSync(migrationPath, "utf8");
+  const migrationFiles = readdirSync(migrationsDir)
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
 
   try {
-    await pool.query(sql);
+    for (const migrationFile of migrationFiles) {
+      const migrationPath = path.join(migrationsDir, migrationFile);
+      const sql = readFileSync(migrationPath, "utf8");
+      await pool.query(sql);
+    }
     console.log("Database migration completed successfully");
   } finally {
     await pool.end();

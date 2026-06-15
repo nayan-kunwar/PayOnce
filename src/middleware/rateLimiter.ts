@@ -47,3 +47,39 @@ export const demoCreatePaymentRateLimiter = rateLimit({
     code: "RATE_LIMIT_EXCEEDED",
   },
 });
+
+export const apiKeySignupRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many API key signup requests, please try again later",
+    code: "RATE_LIMIT_EXCEEDED",
+  },
+});
+
+export const authSignupRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many signup attempts, please try again later",
+    code: "RATE_LIMIT_EXCEEDED",
+  },
+});
+
+export const authLoginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many login attempts, please try again later",
+    code: "RATE_LIMIT_EXCEEDED",
+  },
+});
