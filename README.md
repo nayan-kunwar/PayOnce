@@ -51,6 +51,10 @@ Server runs at `http://localhost:3000`.
 docker compose up --build
 ```
 
+### Deploy to production (free tier)
+
+Render + Neon + Upstash — step-by-step guide: [docs/09-deployment-and-devops](./docs/09-deployment-and-devops/README.md#production-deploy-free-tier-render-split-stack).
+
 ---
 
 ## API

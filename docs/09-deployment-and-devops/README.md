@@ -42,31 +42,72 @@ Tags published:
 - `latest` — most recent production build
 - `<commit-sha>` — immutable tag for rollbacks
 
-### Run the published image
+Render (production) deploys separately when you connect the GitHub repo — see below.
 
-```bash
-docker pull ghcr.io/<owner>/<repo>:latest
+## Production deploy (free tier): Render split stack
 
-docker run -p 3000:3000 \
-  -e DATABASE_URL=postgresql://user:pass@host:5432/payonce \
-  -e REDIS_URL=redis://host:6379 \
-  -e API_KEYS=your-production-api-key \
-  -e IDEMPOTENCY_TTL_SECONDS=86400 \
-  ghcr.io/<owner>/<repo>:latest
+Use three free services (no credit card on Render, Neon, or Upstash):
+
+| Service | Role |
+|---------|------|
+| [Neon](https://neon.tech) | Postgres (`DATABASE_URL`) |
+| [Upstash](https://upstash.com) | Redis (`REDIS_URL`) |
+| [Render](https://render.com) | API (builds from GitHub `Dockerfile`) |
+
+### 1. Create Neon database
+
+1. Create a Neon project.
+2. Copy the **pooled** connection string (includes `?sslmode=require`).
+
+### 2. Create Upstash Redis
+
+1. Create a Redis database in a region near your Render region (e.g. Oregon).
+2. Copy the **Redis URL** (`rediss://...`).
+
+### 3. Create Render web service
+
+1. Render Dashboard → **+ New** → **Web Service**.
+2. Connect your **GitHub** repo (`payonce`).
+3. Render detects the **Dockerfile** automatically.
+4. Settings:
+   - **Instance type:** Free
+   - **Health Check Path:** `/ready`
+5. **Environment variables:**
+
+```env
+DATABASE_URL=postgresql://...        # Neon pooled URL
+REDIS_URL=rediss://...               # Upstash URL
+API_KEYS=your-production-api-key
+IDEMPOTENCY_TTL_SECONDS=86400
+CORS_ORIGINS=https://your-app.onrender.com
+NODE_ENV=production
 ```
 
-The container runs migrations on startup, then starts the API on port 3000.
+6. **Create Web Service** — Render builds and deploys on every push to the linked branch.
 
-### First-time GitHub setup
+### 4. Verify production
 
-1. Merge to `main` and confirm **CI** then **CD** succeed under the Actions tab.
-2. In **Packages**, set container visibility (public for open source repos, private otherwise).
+```bash
+curl https://your-app.onrender.com/health
+curl https://your-app.onrender.com/ready
+```
+
+### Optional: GHCR image instead of GitHub build
+
+If you prefer the CD-published image:
+
+1. **+ New** → **Web Service** → **Existing Image**.
+2. Image URL: `ghcr.io/<owner>/<repo>:latest`
+3. Same environment variables as above.
+4. Trigger redeploys via Render **Deploy Hook** (Settings tab) from GitHub Actions.
 
 ## Notes
 
 - Local Postgres is exposed on host port **5433** to avoid conflicts with existing local Postgres on 5432.
 - CI uses the default Postgres service port 5432 on GitHub Actions runners.
-- CD publishes the app image only; you still provision Postgres and Redis (managed DB, VPS, or `docker compose` on a host).
+- Render free tier **spins down after ~15 min idle** — first request after sleep may take 30–50+ seconds.
+- Render sets `PORT` automatically (e.g. `10000`); the app reads `PORT` from env.
+- `fly.toml` is not used — Render does not depend on Fly.io.
 
 ## How to verify
 
