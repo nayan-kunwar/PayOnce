@@ -1,16 +1,10 @@
 import pg from "pg";
 
 import { redis } from "../../src/db/redis.js";
-
-const BLOCKED_DATABASE_HOSTS = [
-  "neon.tech",
-  "upstash.io",
-  "supabase.co",
-  "railway.app",
-  "render.com",
-];
-
-const BLOCKED_REDIS_HOSTS = ["upstash.io", "rediss://"];
+import {
+  BLOCKED_DATABASE_HOSTS,
+  BLOCKED_REDIS_HOSTS,
+} from "../testEnv.js";
 
 function assertSafeTestDatabase(): void {
   const databaseUrl = process.env.DATABASE_URL ?? "";
@@ -26,7 +20,7 @@ function assertSafeTestDatabase(): void {
 
   if (process.env.NODE_ENV !== "test") {
     throw new Error(
-      "Refusing to reset test data when NODE_ENV is not \"test\".",
+      'Refusing to reset test data when NODE_ENV is not "test".',
     );
   }
 }
