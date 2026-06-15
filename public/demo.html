@@ -10,6 +10,10 @@
     <header>
       <h1>PayOnce Test Console</h1>
       <p>Same-origin UI for testing the payment API — no CORS setup needed.</p>
+      <div id="status-bar" class="status-bar idle" role="status" aria-live="polite">
+        <span id="status-spinner" class="status-spinner" hidden></span>
+        <span id="status-text">Ready — enter your API key and try an action.</span>
+      </div>
     </header>
 
     <main>

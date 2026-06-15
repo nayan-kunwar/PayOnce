@@ -14,18 +14,48 @@ const els = {
   refreshPayments: document.getElementById("refresh-payments"),
   paymentsBody: document.getElementById("payments-body"),
   responseLog: document.getElementById("response-log"),
+  statusBar: document.getElementById("status-bar"),
+  statusText: document.getElementById("status-text"),
+  statusSpinner: document.getElementById("status-spinner"),
 };
 
 function getApiKey() {
   return els.apiKey.value.trim();
 }
 
+function setStatus(message, type = "idle") {
+  els.statusBar.className = `status-bar ${type}`;
+  els.statusText.textContent = message;
+  els.statusSpinner.hidden = type !== "loading";
+}
+
 function logResponse(label, data) {
   const text =
-    typeof data === "string"
-      ? data
-      : JSON.stringify(data, null, 2);
+    typeof data === "string" ? data : JSON.stringify(data, null, 2);
   els.responseLog.textContent = `[${label}]\n${text}`;
+}
+
+async function withLoading(button, labels, fn) {
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.classList.add("loading");
+  button.textContent = labels.loading;
+  setStatus(labels.status, "loading");
+  logResponse(labels.status, { status: "loading" });
+
+  try {
+    const result = await fn();
+    setStatus(labels.success, "success");
+    return result;
+  } catch (error) {
+    const message = error.message ?? "Something went wrong";
+    setStatus(`${labels.errorPrefix}: ${message}`, "error");
+    throw error;
+  } finally {
+    button.disabled = false;
+    button.classList.remove("loading");
+    button.textContent = originalText;
+  }
 }
 
 async function api(path, options = {}) {
@@ -122,21 +152,58 @@ function renderPayments(payments) {
     .join("");
 
   document.querySelectorAll(".apply-status").forEach((button) => {
-    button.addEventListener("click", () => void updateStatus(button.dataset.id));
+    button.addEventListener("click", () =>
+      void withLoading(button, {
+        loading: "Applying…",
+        status: "Updating payment status",
+        success: "Payment status updated",
+        errorPrefix: "Status update failed",
+      }, async () => {
+        await updateStatus(button.dataset.id);
+      }),
+    );
   });
 }
 
-async function loadPayments() {
-  try {
+async function loadPayments({ silent = false } = {}) {
+  const run = async () => {
     const data = await api("/api/v1/payments");
     renderPayments(data.payments ?? []);
     logResponse("GET /api/v1/payments", data);
-  } catch (error) {
-    logResponse("GET /api/v1/payments", {
-      error: error.message,
-      ...(error.body ? { body: error.body } : {}),
-    });
+  };
+
+  if (silent) {
+    try {
+      await run();
+    } catch (error) {
+      logResponse("GET /api/v1/payments", {
+        error: error.message,
+        ...(error.body ? { body: error.body } : {}),
+      });
+    }
+    return;
   }
+
+  await withLoading(
+    els.refreshPayments,
+    {
+      loading: "Refreshing…",
+      status: "Loading payments",
+      success: "Payments loaded",
+      errorPrefix: "Load failed",
+    },
+    async () => {
+      try {
+        await run();
+      } catch (error) {
+        logResponse("GET /api/v1/payments", {
+          error: error.message,
+          ...(error.body ? { body: error.body } : {}),
+        });
+        throw error;
+      }
+    },
+  );
 }
 
 async function createPayment() {
@@ -145,24 +212,38 @@ async function createPayment() {
   const idempotencyKey = els.idempotencyKey.value.trim();
 
   if (!customerId || !idempotencyKey) {
-    logResponse("Create payment", { error: "Customer ID and idempotency key are required." });
+    const message = "Customer ID and idempotency key are required.";
+    setStatus(message, "error");
+    logResponse("Create payment", { error: message });
     return;
   }
 
-  try {
-    const data = await api("/api/v1/payments", {
-      method: "POST",
-      headers: { "Idempotency-Key": idempotencyKey },
-      body: JSON.stringify({ amount, customerId }),
-    });
-    logResponse("POST /api/v1/payments", data);
-    await loadPayments();
-  } catch (error) {
-    logResponse("POST /api/v1/payments", {
-      error: error.message,
-      ...(error.body ? { body: error.body } : {}),
-    });
-  }
+  await withLoading(
+    els.createPayment,
+    {
+      loading: "Creating…",
+      status: "Creating payment",
+      success: "Payment created",
+      errorPrefix: "Create failed",
+    },
+    async () => {
+      try {
+        const data = await api("/api/v1/payments", {
+          method: "POST",
+          headers: { "Idempotency-Key": idempotencyKey },
+          body: JSON.stringify({ amount, customerId }),
+        });
+        logResponse("POST /api/v1/payments", data);
+        await loadPayments({ silent: true });
+      } catch (error) {
+        logResponse("POST /api/v1/payments", {
+          error: error.message,
+          ...(error.body ? { body: error.body } : {}),
+        });
+        throw error;
+      }
+    },
+  );
 }
 
 async function updateStatus(paymentId) {
@@ -172,8 +253,9 @@ async function updateStatus(paymentId) {
   const status = select?.value;
 
   if (!status) {
+    setStatus("Pick a status first.", "error");
     logResponse("Update status", { error: "Pick a status first." });
-    return;
+    throw new Error("Pick a status first.");
   }
 
   try {
@@ -182,25 +264,45 @@ async function updateStatus(paymentId) {
       body: JSON.stringify({ status }),
     });
     logResponse(`PATCH /api/v1/payments/${paymentId}/status`, data);
-    await loadPayments();
+    await loadPayments({ silent: true });
   } catch (error) {
     logResponse(`PATCH /api/v1/payments/${paymentId}/status`, {
       error: error.message,
       ...(error.body ? { body: error.body } : {}),
     });
+    throw error;
   }
 }
 
-function generateIdempotencyKey() {
+function generateIdempotencyKey({ announce = true } = {}) {
   els.idempotencyKey.value = crypto.randomUUID();
+  if (!announce) return;
+
+  setStatus("New idempotency key generated", "success");
+  logResponse("Generate key", {
+    idempotencyKey: els.idempotencyKey.value,
+  });
 }
 
 els.saveKey.addEventListener("click", () => {
   localStorage.setItem(API_KEY_STORAGE, getApiKey());
+  setStatus("API key saved in this browser", "success");
   logResponse("Settings", { message: "API key saved in this browser." });
 });
 
-els.refreshHealth.addEventListener("click", () => void checkHealth());
+els.refreshHealth.addEventListener("click", () =>
+  void withLoading(
+    els.refreshHealth,
+    {
+      loading: "Checking…",
+      status: "Checking health and readiness",
+      success: "Health check complete",
+      errorPrefix: "Health check failed",
+    },
+    checkHealth,
+  ),
+);
+
 els.refreshPayments.addEventListener("click", () => void loadPayments());
 els.createPayment.addEventListener("click", () => void createPayment());
 els.generateKey.addEventListener("click", generateIdempotencyKey);
@@ -210,6 +312,14 @@ if (savedKey) {
   els.apiKey.value = savedKey;
 }
 
-generateIdempotencyKey();
-void checkHealth();
-void loadPayments();
+generateIdempotencyKey({ announce: false });
+setStatus("Loading initial data…", "loading");
+void (async () => {
+  try {
+    await checkHealth();
+    await loadPayments({ silent: true });
+    setStatus("Ready — enter your API key and try an action.", "idle");
+  } catch {
+    setStatus("Ready — some checks failed. See Last response below.", "error");
+  }
+})();
