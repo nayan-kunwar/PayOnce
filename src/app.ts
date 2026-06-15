@@ -42,7 +42,7 @@ app.use(express.json());
 app.use(express.static(publicDir));
 
 app.get("/", (_req, res) => {
-  res.send("PayOnce API Running — open /demo for the test UI");
+  res.sendFile(path.join(publicDir, "index.html"));
 });
 
 app.get("/demo", (_req, res) => {

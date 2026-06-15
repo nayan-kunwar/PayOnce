@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="PayOnce — a production-grade payment API with customer-scoped idempotency, PostgreSQL durability, and Redis caching."
+    />
+    <title>PayOnce — Idempotent Payment API</title>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
+  <body>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <div class="page">
+      <nav class="nav">
+        <a class="logo" href="/">
+          <span class="logo-mark">P</span>
+          PayOnce
+        </a>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#api">API</a>
+          <a href="/health" target="_blank" rel="noopener">Health</a>
+          <a class="btn-nav" href="/demo">Open Demo</a>
+        </div>
+      </nav>
+
+      <header class="hero">
+        <div class="hero-badge">
+          <span class="dot" id="live-dot"></span>
+          <span id="live-label">Checking service status…</span>
+        </div>
+
+        <h1>Charge once.<br /><span>Never twice.</span></h1>
+
+        <p class="hero-sub">
+          A production-grade payment API with customer-scoped idempotency,
+          durable PostgreSQL storage, and a Redis-backed fast path — built with
+          Bun, Express, and TypeScript.
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/demo">
+            Try the test console →
+          </a>
+          <a class="btn btn-secondary" href="#api">View API endpoints</a>
+        </div>
+
+        <div class="status-row">
+          <span class="status-chip pending" id="health-chip">/health — …</span>
+          <span class="status-chip pending" id="ready-chip">/ready — …</span>
+        </div>
+      </header>
+
+      <section class="section" id="features">
+        <div class="section-header">
+          <h2>Built for real payments</h2>
+          <p>
+            Every feature is designed around safe retries, clear errors, and
+            observable production behavior.
+          </p>
+        </div>
+
+        <div class="features">
+          <article class="feature-card">
+            <div class="feature-icon">🔁</div>
+            <h3>Customer-scoped idempotency</h3>
+            <p>
+              Pair <code>customerId</code> with an
+              <code>Idempotency-Key</code> header so network retries never
+              create duplicate charges.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3>Request fingerprinting</h3>
+            <p>
+              Reusing a key with a different body returns
+              <strong>409 Conflict</strong> — catch client bugs before they hit
+              production.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Postgres + Redis</h3>
+            <p>
+              Durable payment records in PostgreSQL with a Redis cache for fast
+              idempotency lookups on hot paths.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">🔐</div>
+            <h3>API key auth &amp; rate limits</h3>
+            <p>
+              Bearer token authentication and global rate limiting protect every
+              <code>/api/v1</code> route out of the box.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Payment lifecycle</h3>
+            <p>
+              Track payments from <em>pending</em> through
+              <em>completed</em>, <em>failed</em>, or <em>cancelled</em> with
+              validated status transitions.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">💚</div>
+            <h3>Health &amp; readiness</h3>
+            <p>
+              Separate liveness (<code>/health</code>) and readiness
+              (<code>/ready</code>) probes for Kubernetes, Render, and Docker
+              deployments.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-header">
+          <h2>Tech stack</h2>
+          <p>Modern tooling chosen for speed, type safety, and operability.</p>
+        </div>
+        <div class="stack">
+          <span class="stack-tag">Bun</span>
+          <span class="stack-tag">Express</span>
+          <span class="stack-tag">TypeScript</span>
+          <span class="stack-tag">PostgreSQL</span>
+          <span class="stack-tag">Redis</span>
+          <span class="stack-tag">Drizzle ORM</span>
+          <span class="stack-tag">Docker</span>
+          <span class="stack-tag">GitHub Actions</span>
+        </div>
+      </section>
+
+      <section class="section" id="api">
+        <div class="section-header">
+          <h2>API reference</h2>
+          <p>
+            All <code>/api/v1</code> routes require
+            <code>Authorization: Bearer &lt;api-key&gt;</code>.
+          </p>
+        </div>
+
+        <div class="api-grid">
+          <div class="api-row">
+            <span class="method method-post">POST</span>
+            <span class="api-path">/api/v1/payments</span>
+            <span class="api-desc">Create payment (idempotent)</span>
+          </div>
+          <div class="api-row">
+            <span class="method method-get">GET</span>
+            <span class="api-path">/api/v1/payments</span>
+            <span class="api-desc">List all payments</span>
+          </div>
+          <div class="api-row">
+            <span class="method method-get">GET</span>
+            <span class="api-path">/api/v1/payments/:id</span>
+            <span class="api-desc">Get payment by ID</span>
+          </div>
+          <div class="api-row">
+            <span class="method method-patch">PATCH</span>
+            <span class="api-path">/api/v1/payments/:id/status</span>
+            <span class="api-desc">Update payment status</span>
+          </div>
+          <div class="api-row">
+            <span class="method method-get">GET</span>
+            <span class="api-path">/health</span>
+            <span class="api-desc">Liveness probe</span>
+          </div>
+          <div class="api-row">
+            <span class="method method-get">GET</span>
+            <span class="api-path">/ready</span>
+            <span class="api-desc">Readiness (DB + Redis)</span>
+          </div>
+        </div>
+
+        <div class="code-block" style="margin-top: 1.5rem">
+          <div class="code-header">Example — create a payment</div>
+          <pre><span class="key">POST</span> /api/v1/payments
+<span class="key">Authorization:</span> Bearer dev-api-key
+<span class="key">Idempotency-Key:</span> order_abc_001
+<span class="key">Content-Type:</span> application/json
+
+{
+  <span class="key">"amount"</span>: <span class="num">1000</span>,
+  <span class="key">"customerId"</span>: <span class="str">"cust_123"</span>
+}
+
+<span class="key">→ 201 Created</span>
+{
+  <span class="key">"success"</span>: <span class="num">true</span>,
+  <span class="key">"fromCache"</span>: <span class="num">false</span>,
+  <span class="key">"payment"</span>: { <span class="key">"id"</span>: <span class="str">"pay_…"</span>, <span class="key">"status"</span>: <span class="str">"pending"</span>, … }
+}</pre>
+        </div>
+      </section>
+
+      <section class="cta">
+        <div class="cta-inner">
+          <h2>See it in action</h2>
+          <p>
+            The built-in test console lets you create payments, test idempotency,
+            and inspect responses — same origin, no CORS setup.
+          </p>
+          <a class="btn btn-primary" href="/demo">Launch test console</a>
+        </div>
+      </section>
+
+      <footer>
+        <p>
+          PayOnce — open-source payment API demo ·
+          <a href="https://github.com/nayan-kunwar/PayOnce" target="_blank" rel="noopener">GitHub</a>
+          · <a href="/demo">Demo</a>
+        </p>
+      </footer>
+    </div>
+
+    <script src="/index.js" type="module"></script>
+  </body>
+</html>
