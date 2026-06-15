@@ -1,3 +1,6 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -8,6 +11,12 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { requestId } from "./middleware/requestId.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import paymentRoutes from "./routes/PaymentRoutes.js";
+
+const publicDir = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "public",
+);
 
 const app = express();
 
@@ -30,8 +39,14 @@ app.use(
 );
 app.use(express.json());
 
+app.use(express.static(publicDir));
+
 app.get("/", (_req, res) => {
-  res.send("PayOnce API Running");
+  res.send("PayOnce API Running — open /demo for the test UI");
+});
+
+app.get("/demo", (_req, res) => {
+  res.sendFile(path.join(publicDir, "demo.html"));
 });
 
 app.use(healthRoutes);

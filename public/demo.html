@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PayOnce Test Console</title>
+    <link rel="stylesheet" href="/demo.css" />
+  </head>
+  <body>
+    <header>
+      <h1>PayOnce Test Console</h1>
+      <p>Same-origin UI for testing the payment API — no CORS setup needed.</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Settings</h2>
+        <div class="grid-2">
+          <div>
+            <label for="api-key">API key</label>
+            <input
+              id="api-key"
+              type="password"
+              placeholder="Same value as API_KEYS on server"
+              autocomplete="off"
+            />
+          </div>
+          <div class="row">
+            <button type="button" id="save-key" class="secondary">Save key</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Health</h2>
+        <div class="row">
+          <div class="status-badges">
+            <span id="health-badge" class="badge pending">Health: …</span>
+            <span id="ready-badge" class="badge pending">Ready: …</span>
+          </div>
+          <button type="button" id="refresh-health" class="secondary">Refresh</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Create payment</h2>
+        <div class="grid-2">
+          <div>
+            <label for="amount">Amount (cents)</label>
+            <input id="amount" type="number" value="1000" min="1" />
+          </div>
+          <div>
+            <label for="customer-id">Customer ID</label>
+            <input id="customer-id" type="text" value="cust_123" />
+          </div>
+          <div>
+            <label for="idempotency-key">Idempotency key</label>
+            <input id="idempotency-key" type="text" />
+          </div>
+        </div>
+        <div class="row" style="margin-top: 1rem">
+          <button type="button" id="generate-key" class="secondary">New key</button>
+          <button type="button" id="create-payment">Create payment</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="row" style="justify-content: space-between; margin-bottom: 1rem">
+          <h2 style="margin: 0">Payments</h2>
+          <button type="button" id="refresh-payments" class="secondary">Refresh</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Amount</th>
+              <th>Customer</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payments-body">
+            <tr>
+              <td colspan="6" class="empty">Loading…</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Last response</h2>
+        <pre id="response-log">Waiting for a request…</pre>
+      </section>
+    </main>
+
+    <script src="/demo.js" type="module"></script>
+  </body>
+</html>

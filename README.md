@@ -123,6 +123,10 @@ Allowed from `pending`: `completed`, `failed`, `cancelled`.
 - `GET /health` — liveness
 - `GET /ready` — readiness (Postgres + Redis)
 
+### Test UI
+
+Open **`/demo`** in the browser for a built-in test console (create/list payments, update status, health checks). Same origin — no extra CORS setup.
+
 ---
 
 ## Testing
