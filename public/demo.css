@@ -43,6 +43,15 @@ header p {
   font-size: 0.9rem;
 }
 
+header p code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+}
+
 .status-bar {
   display: flex;
   align-items: center;

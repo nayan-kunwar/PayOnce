@@ -23,3 +23,27 @@ export const createPaymentRateLimiter = rateLimit({
     code: "RATE_LIMIT_EXCEEDED",
   },
 });
+
+export const demoGlobalRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many demo requests, please try again later",
+    code: "RATE_LIMIT_EXCEEDED",
+  },
+});
+
+export const demoCreatePaymentRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many demo payment requests, please try again later",
+    code: "RATE_LIMIT_EXCEEDED",
+  },
+});

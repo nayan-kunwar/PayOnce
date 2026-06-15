@@ -17,6 +17,11 @@ const envSchema = z.object({
         .filter(Boolean),
     ),
   IDEMPOTENCY_TTL_SECONDS: z.coerce.number().default(86400),
+  DEMO_ENABLED: z
+    .string()
+    .optional()
+    .default("true")
+    .transform((value) => value !== "false" && value !== "0"),
   CORS_ORIGINS: z
     .string()
     .optional()

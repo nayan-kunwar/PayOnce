@@ -10,6 +10,7 @@ import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { requestId } from "./middleware/requestId.js";
 import healthRoutes from "./routes/healthRoutes.js";
+import demoRoutes from "./routes/demoRoutes.js";
 import paymentRoutes from "./routes/PaymentRoutes.js";
 
 const publicDir = path.join(
@@ -50,6 +51,7 @@ app.get("/demo", (_req, res) => {
 });
 
 app.use(healthRoutes);
+app.use("/demo/api", demoRoutes);
 app.use("/api/v1", paymentRoutes);
 
 app.use(notFoundHandler);

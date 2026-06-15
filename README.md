@@ -125,7 +125,11 @@ Allowed from `pending`: `completed`, `failed`, `cancelled`.
 
 ### Test UI
 
-Open **`/demo`** in the browser for a built-in test console (create/list payments, update status, health checks). Same origin — no extra CORS setup.
+Open **`/demo`** in the browser for a built-in test console (create/list payments, update status, health checks). **No API key required** — the UI calls `/demo/api/*` on the server; real keys stay in `API_KEYS` env.
+
+Programmatic access still uses **`/api/v1/*`** with `Authorization: Bearer <key>`.
+
+Details: [docs/10-demo-ui-and-proxy](./docs/10-demo-ui-and-proxy/README.md).
 
 ---
 
@@ -171,7 +175,8 @@ See [.env.example](./.env.example) for all options.
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `REDIS_URL` | Redis connection string |
-| `API_KEYS` | Comma-separated API keys |
+| `API_KEYS` | Comma-separated API keys (server-only; not exposed to `/demo`) |
+| `DEMO_ENABLED` | Enable public demo API at `/demo/api` (default `true`; set `false` to disable) |
 | `IDEMPOTENCY_TTL_SECONDS` | Idempotency TTL (default 86400) |
 | `CORS_ORIGINS` | Allowed CORS origins |
 

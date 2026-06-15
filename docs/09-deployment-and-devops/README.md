@@ -78,6 +78,7 @@ Use three free services (no credit card on Render, Neon, or Upstash):
 DATABASE_URL=postgresql://...        # Neon pooled URL
 REDIS_URL=rediss://...               # Upstash URL
 API_KEYS=your-production-api-key
+DEMO_ENABLED=true
 IDEMPOTENCY_TTL_SECONDS=86400
 CORS_ORIGINS=https://your-app.onrender.com
 NODE_ENV=production

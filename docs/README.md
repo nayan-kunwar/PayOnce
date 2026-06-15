@@ -15,6 +15,7 @@ This folder documents the production-ready upgrade of PayOnce from an in-memory 
 | 7 | Payment lifecycle | [07-payment-lifecycle](./07-payment-lifecycle/README.md) |
 | 8 | Testing | [08-testing](./08-testing/README.md) |
 | 9 | Deployment and DevOps | [09-deployment-and-devops](./09-deployment-and-devops/README.md) |
+| 10 | Demo UI and server-side proxy | [10-demo-ui-and-proxy](./10-demo-ui-and-proxy/README.md) |
 
 ## Quick start (production stack)
 

@@ -9,7 +9,10 @@
   <body>
     <header>
       <h1>PayOnce Test Console</h1>
-      <p>Same-origin UI for testing the payment API — no CORS setup needed.</p>
+      <p>
+        Public demo UI — calls <code>/demo/api</code> on the server. No API key
+        required; your real keys stay in server environment variables.
+      </p>
       <div id="status-bar" class="status-bar idle" role="status" aria-live="polite">
         <span id="status-spinner" class="status-spinner" hidden></span>
         <span id="status-text">Ready — enter your API key and try an action.</span>
@@ -17,24 +20,6 @@
     </header>
 
     <main>
-      <section class="card">
-        <h2>Settings</h2>
-        <div class="grid-2">
-          <div>
-            <label for="api-key">API key</label>
-            <input
-              id="api-key"
-              type="password"
-              placeholder="Same value as API_KEYS on server"
-              autocomplete="off"
-            />
-          </div>
-          <div class="row">
-            <button type="button" id="save-key" class="secondary">Save key</button>
-          </div>
-        </div>
-      </section>
-
       <section class="card">
         <h2>Health</h2>
         <div class="row">
