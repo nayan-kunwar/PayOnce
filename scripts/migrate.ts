@@ -2,10 +2,12 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { resolvePgConnectionString } from "../src/db/pgConnection.js";
 
-const databaseUrl =
+const databaseUrl = resolvePgConnectionString(
   process.env.DATABASE_URL ??
-  "postgresql://postgres:postgres@localhost:5433/payonce";
+    "postgresql://postgres:postgres@localhost:5433/payonce",
+);
 
 async function migrate() {
   const pool = new pg.Pool({ connectionString: databaseUrl });

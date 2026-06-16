@@ -209,7 +209,9 @@ drizzle/
 
 ## Environment Variables
 
-See [.env.example](./.env.example) for all options.
+Full guide: [notes/env/README.md](./notes/env/README.md) (files, profiles, Render checklist).
+
+See [.env.example](./.env.example) for a local Docker template and [.env.production.example](./.env.production.example) for Render (placeholders only).
 
 | Variable | Description |
 |----------|-------------|
