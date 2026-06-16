@@ -12,6 +12,7 @@
 - Added GitHub Actions CD at `.github/workflows/deploy.yml`:
   - Runs after CI succeeds on `main`/`master`
   - Builds and pushes the app image to GitHub Container Registry (`ghcr.io`)
+  - Triggers Render redeploy via `RENDER_DEPLOY_HOOK`
 
 ## Local Docker stack
 
@@ -36,13 +37,26 @@ On every successful merge to `main`/`master`:
 
 1. **CI** runs tests (see `.github/workflows/ci.yml`).
 2. **CD** builds the Docker image and pushes it to `ghcr.io/<owner>/<repo>` (see `.github/workflows/deploy.yml`).
+3. **CD** calls the **Render Deploy Hook** (`RENDER_DEPLOY_HOOK` GitHub secret) so Render pulls and runs the new image.
 
-Tags published:
+Tags published to GHCR:
 
-- `latest` — most recent production build
+- `latest` — most recent production build (what Render should use)
 - `<commit-sha>` — immutable tag for rollbacks
 
-Render (production) deploys separately when you connect the GitHub repo — see below.
+### How Render gets the latest code
+
+```text
+merge → CI passes → CD builds image → push :latest to GHCR → POST deploy hook → Render redeploys
+```
+
+**Recommended Render setup:** Web Service from **Existing Image**  
+`ghcr.io/<owner>/payonce:latest` + Deploy Hook URL stored as GitHub secret `RENDER_DEPLOY_HOOK`.
+
+Detailed walkthrough (settings, verification, rollback):  
+[notes/render/how-latest-code-is-deployed.md](../../notes/render/how-latest-code-is-deployed.md)
+
+**Do not** pin Render to an old SHA tag if you want automatic updates — use `:latest` and let CD + the hook refresh the service.
 
 ## Production deploy (free tier): Render split stack
 
@@ -52,7 +66,7 @@ Use three free services (no credit card on Render, Neon, or Upstash):
 |---------|------|
 | [Neon](https://neon.tech) | Postgres (`DATABASE_URL`) |
 | [Upstash](https://upstash.com) | Redis (`REDIS_URL`) |
-| [Render](https://render.com) | API (builds from GitHub `Dockerfile`) |
+| [Render](https://render.com) | API (GHCR image + deploy hook, or Dockerfile build) |
 
 ### 1. Create Neon database
 
@@ -87,7 +101,20 @@ CORS_ORIGINS=https://your-app.onrender.com
 NODE_ENV=production
 ```
 
-6. **Create Web Service** — Render builds and deploys on every push to the linked branch.
+6. **Create Web Service** — see [GHCR + Deploy Hook](#optional-ghcr-image--deploy-hook-recommended) below for automatic deploys after CI.
+
+### Optional: GHCR image + Deploy Hook (recommended)
+
+This matches `.github/workflows/deploy.yml` — Render runs the same image CI/CD built:
+
+1. **+ New** → **Web Service** → **Existing Image**
+2. **Image URL:** `ghcr.io/<owner>/payonce:latest` (lowercase; use `:latest`, not a fixed SHA)
+3. Same environment variables as above
+4. Render → **Settings** → **Deploy Hook** → copy URL
+5. GitHub repo → **Settings → Secrets and variables → Actions** → add `RENDER_DEPLOY_HOOK`
+6. Merge to `main` — after CI passes, CD pushes `:latest` and POSTs the hook; Render redeploys
+
+Full details: [notes/render/how-latest-code-is-deployed.md](../../notes/render/how-latest-code-is-deployed.md)
 
 ### 4. Verify production
 
@@ -96,14 +123,7 @@ curl https://your-app.onrender.com/health
 curl https://your-app.onrender.com/ready
 ```
 
-### Optional: GHCR image instead of GitHub build
-
-If you prefer the CD-published image:
-
-1. **+ New** → **Web Service** → **Existing Image**.
-2. Image URL: `ghcr.io/<owner>/<repo>:latest`
-3. Same environment variables as above.
-4. Trigger redeploys via Render **Deploy Hook** (Settings tab) from GitHub Actions.
+After a merge to `main`, confirm **GitHub Actions → CD** succeeded, then check **Render → Events** for a deploy triggered by the hook.
 
 ## Notes
 
@@ -112,6 +132,7 @@ If you prefer the CD-published image:
 - Render free tier **spins down after ~15 min idle** — first request after sleep may take 30–50+ seconds.
 - Render sets `PORT` automatically (e.g. `10000`); the app reads `PORT` from env.
 - `fly.toml` is not used — Render does not depend on Fly.io.
+- How Render picks up new builds: [notes/render/how-latest-code-is-deployed.md](../../notes/render/how-latest-code-is-deployed.md)
 
 ## How to verify
 

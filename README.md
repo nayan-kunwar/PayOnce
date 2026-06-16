@@ -57,6 +57,8 @@ docker compose up --build
 
 Render + Neon + Upstash — step-by-step guide: [docs/09-deployment-and-devops](./docs/09-deployment-and-devops/README.md#production-deploy-free-tier-render-split-stack).
 
+**How Render gets the latest code after you merge to `main`:** CI passes → CD pushes `ghcr.io/<owner>/payonce:latest` → Render Deploy Hook redeploys. Details: [notes/render/how-latest-code-is-deployed.md](./notes/render/how-latest-code-is-deployed.md).
+
 ---
 
 ## API
