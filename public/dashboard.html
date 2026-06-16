@@ -3,114 +3,175 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PayOnce Dashboard</title>
+    <title>PayOnce — Dashboard</title>
     <link rel="stylesheet" href="/dashboard.css" />
   </head>
   <body>
-    <main class="dashboard-shell">
-      <header class="panel">
-        <div>
-          <h1>Developer Dashboard</h1>
-          <p id="user-line" class="muted">Loading account...</p>
-        </div>
-        <div class="row">
-          <a class="link" href="/">Home</a>
-          <a class="link" href="/docs">API Reference</a>
-          <button id="logout-btn" type="button">Log out</button>
-        </div>
-      </header>
+    <div class="bg-glow" aria-hidden="true"></div>
 
-      <section class="panel">
-        <h2>Personal API Keys</h2>
-        <form id="new-key-form" class="form-inline">
-          <input id="new-key-label" type="text" maxlength="80" placeholder="Label (optional)" />
-          <button type="submit">Create key</button>
-        </form>
-        <p id="key-status" class="muted">Create a key to use /api/v1 routes. Only key prefixes are shown in the list.</p>
-        <div id="created-key-box" class="created-key" hidden>
-          <div class="row created-key-header">
-            <strong>New key (shown once)</strong>
-            <button id="copy-created-key" type="button">Copy key</button>
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <a class="logo" href="/">
+          <span class="logo-mark">P</span>
+          PayOnce
+        </a>
+
+        <nav class="side-nav" aria-label="Dashboard sections">
+          <button type="button" class="side-link active" data-section="overview">
+            <span class="side-icon" aria-hidden="true">📊</span>
+            Overview
+          </button>
+          <button type="button" class="side-link" data-section="keys">
+            <span class="side-icon" aria-hidden="true">🔑</span>
+            API Keys
+          </button>
+          <button type="button" class="side-link" data-section="usage">
+            <span class="side-icon" aria-hidden="true">📈</span>
+            Usage
+          </button>
+        </nav>
+
+        <div class="side-external">
+          <span class="side-heading">Shortcuts</span>
+          <a href="/" class="side-ext-link"><span aria-hidden="true">🏠</span> Home</a>
+          <a href="/demo" class="side-ext-link"><span aria-hidden="true">🧪</span> Demo</a>
+          <a href="/docs" class="side-ext-link"><span aria-hidden="true">📚</span> API Reference</a>
+        </div>
+
+        <div class="side-footer">
+          <div class="side-user">
+            <span class="user-avatar" id="user-avatar" aria-hidden="true">·</span>
+            <span id="user-line" class="user-email">Loading…</span>
           </div>
-          <pre id="created-key-value"></pre>
-          <p class="muted created-key-hint">Paste this into the API Playground below to test immediately.</p>
+          <button id="logout-btn" type="button" class="btn btn-ghost btn-block">Log out</button>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Prefix</th>
-                <th>Label</th>
-                <th>Created</th>
-                <th>Last used</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="keys-body">
-              <tr><td colspan="6" class="muted">Loading keys...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      </aside>
 
-      <section class="panel" id="playground">
-        <h2>API Playground</h2>
-        <p class="muted">Test your personal API key against <code>/api/v1</code> without leaving the dashboard.</p>
+      <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
 
-        <div class="playground-row">
-          <select id="play-method" aria-label="HTTP method">
-            <option value="GET">GET</option>
-            <option value="POST">POST</option>
-            <option value="PATCH">PATCH</option>
-          </select>
-          <input id="play-path" type="text" value="/api/v1/payments" aria-label="Request path" />
-        </div>
+      <div class="content">
+        <header class="topbar">
+          <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Toggle navigation">☰</button>
+          <h1 id="page-title">Overview</h1>
+          <a class="btn btn-secondary btn-sm" href="/docs">Test in API Reference →</a>
+        </header>
 
-        <label class="field-label">
-          API key
-          <input id="play-key" type="password" placeholder="Paste your pk_live_… key" autocomplete="off" />
-        </label>
+        <main class="main">
+          <!-- Overview -->
+          <section class="view active" data-view="overview">
+            <div class="stats-grid" aria-label="Usage summary">
+              <article class="stat-card">
+                <span class="stat-label">Total requests</span>
+                <strong class="stat-value" id="stat-total">—</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">Successful</span>
+                <strong class="stat-value stat-success" id="stat-success">—</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">Errors</span>
+                <strong class="stat-value stat-danger" id="stat-errors">—</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">Avg latency</span>
+                <strong class="stat-value" id="stat-latency">—</strong>
+              </article>
+            </div>
 
-        <label class="field-label" id="play-idempotency-wrap">
-          Idempotency-Key (POST only)
-          <input id="play-idempotency" type="text" placeholder="order_abc_001" />
-        </label>
+            <article class="card">
+              <div class="card-header">
+                <h2>Recent requests</h2>
+              </div>
+              <ul id="usage-recent" class="list"></ul>
+            </article>
+          </section>
 
-        <label class="field-label" id="play-body-wrap">
-          Request body (JSON)
-          <textarea id="play-body" rows="5">{
-  "amount": 1000,
-  "customerId": "cust_123"
-}</textarea>
-        </label>
+          <!-- API Keys -->
+          <section class="view" data-view="keys">
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Personal API keys</h2>
+                  <p class="muted">Use these on <code>/api/v1</code> routes. Only key prefixes are stored after creation.</p>
+                </div>
+              </div>
 
-        <div class="row">
-          <button id="play-send" type="button" class="primary">Send request</button>
-          <button id="play-fill-list" type="button">Use GET list</button>
-          <button id="play-fill-create" type="button">Use POST create</button>
-        </div>
-        <p id="play-status" class="muted">Ready.</p>
-        <pre id="play-output" class="play-output">Response will appear here.</pre>
-      </section>
+              <form id="new-key-form" class="key-form">
+                <input
+                  id="new-key-label"
+                  class="input"
+                  type="text"
+                  maxlength="80"
+                  placeholder="Label (optional) — e.g. My app"
+                />
+                <button type="submit" class="btn btn-primary">Create key</button>
+              </form>
+              <p id="key-status" class="status-line muted">Create a key to start calling the API.</p>
 
-      <section class="grid-2">
-        <article class="panel">
-          <h2>Usage Summary</h2>
-          <div id="usage-summary" class="kv-list"></div>
-        </article>
+              <div id="created-key-box" class="created-key" hidden>
+                <div class="created-key-header">
+                  <strong>New key — shown once</strong>
+                  <button id="copy-created-key" type="button" class="btn btn-secondary btn-sm">Copy key</button>
+                </div>
+                <pre id="created-key-value"></pre>
+                <p class="muted created-key-hint">
+                  Save it now. Paste it as <code>Authorization: Bearer &lt;key&gt;</code> in the
+                  <a class="link" href="/docs">API Reference</a> to test.
+                </p>
+              </div>
 
-        <article class="panel">
-          <h2>Usage by Key</h2>
-          <ul id="usage-by-key" class="list"></ul>
-        </article>
-      </section>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Prefix</th>
+                      <th>Label</th>
+                      <th>Created</th>
+                      <th>Last used</th>
+                      <th>Status</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="keys-body">
+                    <tr><td colspan="6" class="muted empty-cell">Loading keys…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
 
-      <section class="panel">
-        <h2>Recent Requests</h2>
-        <ul id="usage-recent" class="list"></ul>
-      </section>
-    </main>
+          <!-- Usage -->
+          <section class="view" data-view="usage">
+            <div class="stats-grid" aria-label="Usage summary">
+              <article class="stat-card">
+                <span class="stat-label">Total requests</span>
+                <strong class="stat-value" id="stat-total-2">—</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">Successful</span>
+                <strong class="stat-value stat-success" id="stat-success-2">—</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">Errors</span>
+                <strong class="stat-value stat-danger" id="stat-errors-2">—</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">Avg latency</span>
+                <strong class="stat-value" id="stat-latency-2">—</strong>
+              </article>
+            </div>
+
+            <article class="card">
+              <div class="card-header">
+                <h2>Usage by key</h2>
+              </div>
+              <ul id="usage-by-key" class="list"></ul>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
     <script src="/dashboard.js" type="module"></script>
   </body>
 </html>

@@ -36,7 +36,6 @@ Never commit `.env`, `.env.local`, or `.env.production` — they contain secrets
 | `REDIS_URL` | No | `redis://localhost:6379` | Redis or Upstash URL (`redis://` or `rediss://`) |
 | `API_KEYS` | No | `dev-api-key` | Comma-separated server API keys (see below) |
 | `DEMO_ENABLED` | No | `true` | Set `false` to disable `/demo/api` |
-| `SIGNUP_ENABLED` | No | `true` | Set `false` to disable public `POST /api/keys` |
 | `SESSION_COOKIE_NAME` | No | `payonce_session` | HttpOnly session cookie for `/auth` and `/dashboard` |
 | `SESSION_TTL_HOURS` | No | `168` | Session lifetime in hours (7 days) |
 | `IDEMPOTENCY_TTL_SECONDS` | No | `86400` | How long idempotency records are kept (24 hours) |
@@ -62,7 +61,6 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5433/payonce
 REDIS_URL=redis://localhost:6379
 API_KEYS=dev-api-key,another-dev-key
 DEMO_ENABLED=true
-SIGNUP_ENABLED=true
 SESSION_COOKIE_NAME=payonce_session
 SESSION_TTL_HOURS=168
 IDEMPOTENCY_TTL_SECONDS=86400
@@ -90,7 +88,6 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST.neon.tech/neondb?sslmode=require
 REDIS_URL=rediss://default:TOKEN@HOST.upstash.io:6379
 API_KEYS=dev-api-key,another-dev-key
 DEMO_ENABLED=true
-SIGNUP_ENABLED=true
 SESSION_COOKIE_NAME=payonce_session
 SESSION_TTL_HOURS=168
 IDEMPOTENCY_TTL_SECONDS=86400
@@ -109,7 +106,6 @@ DATABASE_URL=postgresql://...@....neon.tech/neondb?sslmode=require
 REDIS_URL=rediss://...@....upstash.io:6379
 API_KEYS=your-strong-production-key
 DEMO_ENABLED=true
-SIGNUP_ENABLED=true
 SESSION_COOKIE_NAME=payonce_session
 SESSION_TTL_HOURS=168
 IDEMPOTENCY_TTL_SECONDS=86400

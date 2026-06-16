@@ -11,7 +11,6 @@ import { cspNonce } from "./middleware/cspNonce.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { requestId } from "./middleware/requestId.js";
 import authRoutes from "./routes/authRoutes.js";
-import apiKeyRoutes from "./routes/apiKeyRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import demoRoutes from "./routes/demoRoutes.js";
@@ -87,7 +86,6 @@ app.get("/dashboard", (_req, res) => {
 
 app.use(healthRoutes);
 app.use("/auth", authRoutes);
-app.use("/api/keys", apiKeyRoutes);
 app.use("/dashboard/api", dashboardRoutes);
 app.use("/demo/api", demoRoutes);
 app.use("/api/v1", paymentRoutes);

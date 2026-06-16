@@ -1,19 +1,18 @@
 # Phase 11: API key signup
 
-## What changed
+> **Note:** Public email-only signup (`POST /api/keys`) and the home-page "Get your API key" form were removed. Personal API keys are created from the dashboard after account signup (Phase 12).
 
-- Added public self-service signup endpoint: `POST /api/keys`.
-- API keys are now stored as **SHA-256 hashes** in Postgres (`api_keys` table).
+## What changed (historical)
+
+- Added public self-service signup endpoint: `POST /api/keys` *(removed)*.
+- API keys are stored as **SHA-256 hashes** in Postgres (`api_keys` table).
 - The full key is returned only once at creation time.
 - Existing static keys from `API_KEYS` env still work.
-- Added optional account-based key management at `/login` and `/dashboard` (see [Phase 12](../12-accounts-dashboard-and-analytics/README.md)).
-- Added `SIGNUP_ENABLED` env flag (default `true`) to enable/disable signup.
-- Added signup rate limiting: **5 requests/hour** per IP.
-- Landing page now includes a "Get your API key" form with copy support.
+- Added account-based key management at `/login` and `/dashboard` (see [Phase 12](../12-accounts-dashboard-and-analytics/README.md)).
 
 ## Why
 
-Public demos are easier to adopt when developers can get a key immediately. Hashing keys in storage prevents plaintext credential exposure if a database snapshot is leaked.
+Hashing keys in storage prevents plaintext credential exposure if a database snapshot is leaked. Dashboard-based key creation replaced public email-only signup.
 
 ## Data model
 
@@ -24,37 +23,24 @@ Public demos are easier to adopt when developers can get a key immediately. Hash
 - `key_prefix` (display-safe prefix)
 - `owner_email`
 - `label` (optional)
+- `user_id` (nullable; set for dashboard-created keys)
 - `created_at`
 - `last_used_at`
-- `revoked_at` (future use)
+- `revoked_at`
 
-## API
+## Create API keys today
 
-### Create API key
+Sign up at `/login`, then create keys from the dashboard:
 
-`POST /api/keys`
-
-Body:
+`POST /dashboard/api/keys` (session cookie required)
 
 ```json
 {
-  "email": "dev@example.com",
   "label": "My app"
 }
 ```
 
-Response (`201`):
-
-```json
-{
-  "success": true,
-  "apiKey": "pk_live_...",
-  "keyPrefix": "pk_live_...",
-  "message": "Save this key now — it will not be shown again."
-}
-```
-
-### Use generated key
+### Use a generated key
 
 ```bash
 curl http://localhost:3000/api/v1/payments \
@@ -65,21 +51,18 @@ curl http://localhost:3000/api/v1/payments \
 
 - Store only hashes, never plaintext keys.
 - Redact `authorization` and `x-api-key` headers from request logs.
-- Keep signup endpoint rate-limited.
 - Keep static `API_KEYS` for admin/CI fallback.
 
 ## Environment
 
 ```env
 API_KEYS=dev-api-key,another-dev-key
-SIGNUP_ENABLED=true
 ```
-
-When `SIGNUP_ENABLED=false`, `POST /api/keys` returns `404`.
 
 ## How to verify
 
 ```bash
 bun run migrate
 bun test tests/integration/apiKeys.test.ts
+bun test tests/integration/dashboard.test.ts
 ```

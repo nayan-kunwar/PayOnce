@@ -22,11 +22,6 @@ const envSchema = z.object({
     .optional()
     .default("true")
     .transform((value) => value !== "false" && value !== "0"),
-  SIGNUP_ENABLED: z
-    .string()
-    .optional()
-    .default("true")
-    .transform((value) => value !== "false" && value !== "0"),
   SESSION_COOKIE_NAME: z.string().default("payonce_session"),
   SESSION_TTL_HOURS: z.coerce.number().default(168),
   CORS_ORIGINS: z

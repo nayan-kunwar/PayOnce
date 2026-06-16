@@ -15,7 +15,6 @@ process.env.DATABASE_URL = resolveTestDatabaseUrl();
 process.env.REDIS_URL = resolveTestRedisUrl();
 process.env.API_KEYS ??= "test-api-key";
 process.env.DEMO_ENABLED ??= "true";
-process.env.SIGNUP_ENABLED ??= "true";
 process.env.SESSION_COOKIE_NAME ??= "payonce_session";
 process.env.SESSION_TTL_HOURS ??= "168";
 process.env.IDEMPOTENCY_TTL_SECONDS ??= "86400";

@@ -31,7 +31,7 @@ New/updated tables:
 - `api_usage_events`
 - `api_keys` now supports nullable `user_id` ownership
 
-Legacy signup via `/api/keys` remains compatible.
+Personal API keys are created from the dashboard (`POST /dashboard/api/keys`).
 
 ## Security notes
 
@@ -43,7 +43,6 @@ Legacy signup via `/api/keys` remains compatible.
 ## Environment
 
 ```env
-SIGNUP_ENABLED=true
 SESSION_COOKIE_NAME=payonce_session
 SESSION_TTL_HOURS=168
 ```

@@ -24,7 +24,6 @@
           <a href="/login">Login</a>
           <a href="/dashboard">Dashboard</a>
           <a href="/docs">API Reference</a>
-          <a href="#signup">Get API key</a>
           <a href="#api">API</a>
           <a href="/health" target="_blank" rel="noopener">Health</a>
           <a class="btn-nav" href="/demo">Open Demo</a>
@@ -49,6 +48,7 @@
           <a class="btn btn-primary" href="/demo">
             Try the test console →
           </a>
+          <a class="btn btn-secondary" href="/login">Create account</a>
           <a class="btn btn-secondary" href="/docs">View API reference</a>
         </div>
 
@@ -145,73 +145,14 @@
         </div>
       </section>
 
-      <section class="section" id="signup">
-        <div class="section-header">
-          <h2>Get your API key</h2>
-          <p>
-            Generate your own key for programmatic access to <code>/api/v1</code>.
-            We only show the full key once.
-          </p>
-        </div>
-
-        <div class="signup-card">
-          <form id="signup-form" class="signup-form">
-            <div class="signup-grid">
-              <label class="field">
-                <span>Email</span>
-                <input
-                  id="signup-email"
-                  type="email"
-                  name="email"
-                  placeholder="dev@example.com"
-                  required
-                />
-              </label>
-
-              <label class="field">
-                <span>Label (optional)</span>
-                <input
-                  id="signup-label"
-                  type="text"
-                  name="label"
-                  placeholder="My app"
-                  maxlength="80"
-                />
-              </label>
-            </div>
-
-            <div class="signup-actions">
-              <button id="signup-submit" class="btn btn-primary" type="submit">
-                Generate API key
-              </button>
-              <span id="signup-status" class="signup-status" aria-live="polite">
-                Enter your email to create a key.
-              </span>
-            </div>
-          </form>
-
-          <div id="signup-result" class="signup-result" hidden>
-            <div class="result-header">
-              <strong>Your API key (shown once)</strong>
-              <button id="copy-api-key" type="button" class="btn btn-secondary">
-                Copy key
-              </button>
-            </div>
-            <pre id="api-key-value"></pre>
-            <p>
-              Keep this key secret. Use it in
-              <code>Authorization: Bearer &lt;your-key&gt;</code>.
-            </p>
-          </div>
-        </div>
-      </section>
-
       <section class="section" id="api">
         <div class="section-header">
           <h2>API reference</h2>
           <p>
             All <code>/api/v1</code> routes require
             <code>Authorization: Bearer &lt;api-key&gt;</code>.
+            Create an account at <a class="link" href="/login">/login</a>, then
+            generate keys from the <a class="link" href="/dashboard">dashboard</a>.
             <a class="link" href="/docs">View full interactive API reference →</a>
           </p>
         </div>

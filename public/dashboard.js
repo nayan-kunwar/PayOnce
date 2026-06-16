@@ -1,8 +1,20 @@
-const path = window.location.pathname;
-
 function formatDate(value) {
   if (!value) return "—";
   return new Date(value).toLocaleString();
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[char],
+  );
 }
 
 async function api(url, options = {}) {
@@ -20,76 +32,33 @@ async function api(url, options = {}) {
   return body;
 }
 
-function initAuthPage() {
-  const tabSignup = document.getElementById("tab-signup");
-  const tabLogin = document.getElementById("tab-login");
-  const form = document.getElementById("auth-form");
-  const nameField = document.getElementById("name-field");
-  const submit = document.getElementById("auth-submit");
-  const status = document.getElementById("auth-status");
-
-  let mode = "signup";
-
-  function setMode(nextMode) {
-    mode = nextMode;
-    tabSignup.classList.toggle("active", mode === "signup");
-    tabLogin.classList.toggle("active", mode === "login");
-    nameField.hidden = mode !== "signup";
-    submit.textContent = mode === "signup" ? "Create account" : "Log in";
-    status.textContent =
-      mode === "signup"
-        ? "Create an account to continue."
-        : "Log in with your existing account.";
-  }
-
-  tabSignup.addEventListener("click", () => setMode("signup"));
-  tabLogin.addEventListener("click", () => setMode("login"));
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const email = document.getElementById("auth-email").value.trim();
-    const password = document.getElementById("auth-password").value;
-    const name = document.getElementById("auth-name").value.trim();
-
-    submit.disabled = true;
-    status.textContent = mode === "signup" ? "Creating account..." : "Logging in...";
-
-    try {
-      await api(mode === "signup" ? "/auth/signup" : "/auth/login", {
-        method: "POST",
-        body: JSON.stringify({
-          email,
-          password,
-          ...(mode === "signup" && name ? { name } : {}),
-        }),
-      });
-
-      window.location.href = "/dashboard";
-    } catch (error) {
-      status.textContent = error.message;
-    } finally {
-      submit.disabled = false;
+async function copyText(text, statusEl, okMsg) {
+  try {
+    await navigator.clipboard.writeText(text);
+    if (statusEl) {
+      statusEl.textContent = okMsg;
+      statusEl.className = "status-line success";
     }
-  });
+  } catch {
+    if (statusEl) {
+      statusEl.textContent = "Copy failed — select and copy manually.";
+      statusEl.className = "status-line error";
+    }
+  }
 }
 
 async function loadMe() {
   const data = await api("/dashboard/api/me");
-  document.getElementById("user-line").textContent = `${data.user.email}`;
+  const email = data.user.email;
+  document.getElementById("user-line").textContent = email;
+  const avatar = document.getElementById("user-avatar");
+  if (avatar && email) {
+    avatar.textContent = email.charAt(0);
+  }
 }
 
 function maskedKey(prefix) {
   return `${prefix}••••••••••`;
-}
-
-async function copyText(text, statusEl, okMsg) {
-  try {
-    await navigator.clipboard.writeText(text);
-    if (statusEl) statusEl.textContent = okMsg;
-  } catch {
-    if (statusEl) statusEl.textContent = "Copy failed — select and copy manually.";
-  }
 }
 
 async function loadKeys() {
@@ -97,25 +66,30 @@ async function loadKeys() {
   const data = await api("/dashboard/api/keys");
 
   if (!data.keys.length) {
-    body.innerHTML = '<tr><td colspan="6" class="muted">No API keys yet.</td></tr>';
+    body.innerHTML =
+      '<tr><td colspan="6" class="muted empty-cell">No API keys yet. Create one above to get started.</td></tr>';
     return;
   }
 
   body.innerHTML = data.keys
-    .map(
-      (key) => `<tr>
-        <td><code class="masked-key">${maskedKey(key.keyPrefix)}</code></td>
-        <td>${key.label ?? "—"}</td>
-        <td>${formatDate(key.createdAt)}</td>
-        <td>${formatDate(key.lastUsedAt)}</td>
-        <td>${key.revokedAt ? "revoked" : "active"}</td>
-        <td>${
-          key.revokedAt
-            ? "—"
-            : `<button type="button" data-key-id="${key.id}" class="revoke danger">Revoke</button>`
-        }</td>
-      </tr>`,
-    )
+    .map((key) => {
+      const statusBadge = key.revokedAt
+        ? '<span class="badge badge-revoked">revoked</span>'
+        : '<span class="badge badge-active">active</span>';
+      const action = key.revokedAt
+        ? "—"
+        : `<button type="button" data-key-id="${escapeHtml(
+            key.id,
+          )}" class="btn btn-danger btn-sm revoke">Revoke</button>`;
+      return `<tr>
+        <td><code class="masked-key">${escapeHtml(maskedKey(key.keyPrefix))}</code></td>
+        <td>${escapeHtml(key.label ?? "—")}</td>
+        <td>${escapeHtml(formatDate(key.createdAt))}</td>
+        <td>${escapeHtml(formatDate(key.lastUsedAt))}</td>
+        <td>${statusBadge}</td>
+        <td>${action}</td>
+      </tr>`;
+    })
     .join("");
 
   document.querySelectorAll(".revoke").forEach((button) => {
@@ -126,12 +100,18 @@ async function loadKeys() {
           method: "DELETE",
         });
         keyStatus.textContent = "API key revoked.";
+        keyStatus.className = "status-line success";
         await loadKeys();
       } catch (error) {
         keyStatus.textContent = error.message;
+        keyStatus.className = "status-line error";
       }
     });
   });
+}
+
+function methodClass(method) {
+  return `method-${String(method).toLowerCase()}`;
 }
 
 async function loadUsage() {
@@ -141,116 +121,102 @@ async function loadUsage() {
     api("/dashboard/api/usage/by-key"),
   ]);
 
-  const summaryEl = document.getElementById("usage-summary");
-  summaryEl.innerHTML = `
-    <div class="kv-item"><span>Total requests</span><strong>${summary.summary.totalRequests}</strong></div>
-    <div class="kv-item"><span>Success</span><strong>${summary.summary.successCount}</strong></div>
-    <div class="kv-item"><span>Errors</span><strong>${summary.summary.errorCount}</strong></div>
-    <div class="kv-item"><span>Avg latency</span><strong>${summary.summary.avgLatencyMs} ms</strong></div>
-  `;
+  const setStat = (id, value) => {
+    document.querySelectorAll(`#${id}, #${id}-2`).forEach((el) => {
+      el.textContent = value;
+    });
+  };
+  setStat("stat-total", summary.summary.totalRequests);
+  setStat("stat-success", summary.summary.successCount);
+  setStat("stat-errors", summary.summary.errorCount);
+  setStat("stat-latency", `${summary.summary.avgLatencyMs} ms`);
 
   const usageByKeyEl = document.getElementById("usage-by-key");
   usageByKeyEl.innerHTML = byKey.usageByKey.length
     ? byKey.usageByKey
         .map(
           (row) =>
-            `<li>${row.keyPrefix ?? row.apiKeyId ?? "unknown"} — ${row.requestCount} requests</li>`,
+            `<li>
+              <code class="grow">${escapeHtml(
+                row.keyPrefix ?? row.apiKeyId ?? "unknown",
+              )}</code>
+              <span class="meta">${escapeHtml(row.requestCount)} requests</span>
+            </li>`,
         )
         .join("")
-    : "<li>No usage yet.</li>";
+    : '<li class="list-empty">No usage yet.</li>';
 
   const recentEl = document.getElementById("usage-recent");
   recentEl.innerHTML = recent.events.length
     ? recent.events
-        .map(
-          (event) =>
-            `<li><strong>${event.method}</strong> ${event.path} → ${event.statusCode} (${event.latencyMs} ms) <span class="muted">${formatDate(event.createdAt)}</span></li>`,
-        )
+        .map((event) => {
+          const ok = event.statusCode < 400;
+          return `<li>
+            <span class="method-badge ${methodClass(event.method)}">${escapeHtml(
+              event.method,
+            )}</span>
+            <span class="path grow">${escapeHtml(event.path)}</span>
+            <span class="status-code ${ok ? "ok" : "err"}">${escapeHtml(
+              event.statusCode,
+            )}</span>
+            <span class="meta">${escapeHtml(event.latencyMs)} ms · ${escapeHtml(
+              formatDate(event.createdAt),
+            )}</span>
+          </li>`;
+        })
         .join("")
-    : "<li>No events yet.</li>";
+    : '<li class="list-empty">No requests yet.</li>';
+}
+
+function initNavigation() {
+  const sidebar = document.getElementById("sidebar");
+  const backdrop = document.getElementById("sidebar-backdrop");
+  const menuToggle = document.getElementById("menu-toggle");
+  const links = document.querySelectorAll(".side-link");
+  const views = document.querySelectorAll(".view");
+  const pageTitle = document.getElementById("page-title");
+
+  function closeSidebar() {
+    sidebar.classList.remove("open");
+    backdrop.hidden = true;
+  }
+
+  function showSection(section, label) {
+    links.forEach((link) =>
+      link.classList.toggle("active", link.dataset.section === section),
+    );
+    views.forEach((view) =>
+      view.classList.toggle("active", view.dataset.view === section),
+    );
+    pageTitle.textContent = label;
+    closeSidebar();
+  }
+
+  links.forEach((link) => {
+    link.addEventListener("click", () => {
+      showSection(link.dataset.section, link.textContent.trim());
+    });
+  });
+
+  menuToggle.addEventListener("click", () => {
+    const isOpen = sidebar.classList.toggle("open");
+    backdrop.hidden = !isOpen;
+  });
+  backdrop.addEventListener("click", closeSidebar);
 }
 
 function initDashboardPage() {
+  initNavigation();
+
   const keyForm = document.getElementById("new-key-form");
   const keyLabel = document.getElementById("new-key-label");
   const keyStatus = document.getElementById("key-status");
   const createdKeyBox = document.getElementById("created-key-box");
   const createdKeyValue = document.getElementById("created-key-value");
   const copyCreatedKeyBtn = document.getElementById("copy-created-key");
-  const playMethod = document.getElementById("play-method");
-  const playPath = document.getElementById("play-path");
-  const playKey = document.getElementById("play-key");
-  const playIdempotency = document.getElementById("play-idempotency");
-  const playBody = document.getElementById("play-body");
-  const playSend = document.getElementById("play-send");
-  const playFillList = document.getElementById("play-fill-list");
-  const playFillCreate = document.getElementById("play-fill-create");
-  const playStatus = document.getElementById("play-status");
-  const playOutput = document.getElementById("play-output");
-  const playIdempotencyWrap = document.getElementById("play-idempotency-wrap");
-  const playBodyWrap = document.getElementById("play-body-wrap");
   const logoutBtn = document.getElementById("logout-btn");
 
   let latestCreatedKey = "";
-
-  function updatePlaygroundFields() {
-    const method = playMethod.value;
-    playIdempotencyWrap.hidden = method !== "POST";
-    playBodyWrap.hidden = method === "GET";
-  }
-
-  async function sendPlaygroundRequest() {
-    const method = playMethod.value;
-    const requestPath = playPath.value.trim();
-    const apiKey = playKey.value.trim();
-
-    if (!requestPath.startsWith("/api/v1/")) {
-      playStatus.textContent = "Path must start with /api/v1/.";
-      return;
-    }
-    if (!apiKey) {
-      playStatus.textContent = "Paste your API key first.";
-      return;
-    }
-
-    playStatus.textContent = "Sending…";
-    playSend.disabled = true;
-
-    const headers = {
-      Authorization: `Bearer ${apiKey}`,
-      Accept: "application/json",
-    };
-
-    const init = { method, headers };
-
-    if (method === "POST") {
-      const idem = playIdempotency.value.trim();
-      if (idem) headers["Idempotency-Key"] = idem;
-      headers["Content-Type"] = "application/json";
-      init.body = playBody.value;
-    } else if (method === "PATCH") {
-      headers["Content-Type"] = "application/json";
-      init.body = playBody.value;
-    }
-
-    try {
-      const res = await fetch(requestPath, init);
-      const text = await res.text();
-      let bodyDisplay = text;
-      try {
-        bodyDisplay = JSON.stringify(JSON.parse(text), null, 2);
-      } catch {
-        /* keep raw text */
-      }
-      playStatus.textContent = `${res.status} ${res.statusText}`;
-      playOutput.textContent = bodyDisplay || "(empty body)";
-    } catch (err) {
-      playStatus.textContent = "Request failed.";
-      playOutput.textContent = String(err);
-    } finally {
-      playSend.disabled = false;
-    }
-  }
 
   keyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -264,12 +230,13 @@ function initDashboardPage() {
       latestCreatedKey = data.apiKey;
       createdKeyValue.textContent = data.apiKey;
       createdKeyBox.hidden = false;
-      playKey.value = data.apiKey;
       keyStatus.textContent = "New key created. Copy it now — it won't be shown again.";
+      keyStatus.className = "status-line success";
       keyLabel.value = "";
       await loadKeys();
     } catch (error) {
       keyStatus.textContent = error.message;
+      keyStatus.className = "status-line error";
     }
   });
 
@@ -278,41 +245,14 @@ function initDashboardPage() {
     copyText(latestCreatedKey, keyStatus, "Key copied to clipboard.");
   });
 
-  playMethod.addEventListener("change", updatePlaygroundFields);
-  playSend.addEventListener("click", sendPlaygroundRequest);
-  playFillList.addEventListener("click", () => {
-    playMethod.value = "GET";
-    playPath.value = "/api/v1/payments";
-    updatePlaygroundFields();
-  });
-  playFillCreate.addEventListener("click", () => {
-    playMethod.value = "POST";
-    playPath.value = "/api/v1/payments";
-    playIdempotency.value = `play_${Date.now()}`;
-    playBody.value = JSON.stringify(
-      { amount: 1000, customerId: "cust_playground" },
-      null,
-      2,
-    );
-    updatePlaygroundFields();
-  });
-
   logoutBtn.addEventListener("click", async () => {
     await api("/auth/logout", { method: "POST" });
     window.location.href = "/login";
   });
-
-  updatePlaygroundFields();
 
   Promise.all([loadMe(), loadKeys(), loadUsage()]).catch(() => {
     window.location.href = "/login";
   });
 }
 
-if (path === "/login") {
-  initAuthPage();
-}
-
-if (path === "/dashboard") {
-  initDashboardPage();
-}
+initDashboardPage();

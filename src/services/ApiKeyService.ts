@@ -15,21 +15,6 @@ type ApiKeyAuthContext = {
 };
 
 class ApiKeyService {
-  async createApiKey(email: string, label?: string): Promise<CreateApiKeyResult> {
-    const { apiKey, keyHash, keyPrefix } = generateApiKey();
-    const id = `key_${randomUUID()}`;
-
-    await apiKeyRepository.save({
-      id,
-      keyHash,
-      keyPrefix,
-      ownerEmail: email,
-      label,
-    });
-
-    return { id, apiKey, keyPrefix };
-  }
-
   async createPersonalApiKey(
     userId: string,
     email: string,

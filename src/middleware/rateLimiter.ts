@@ -48,18 +48,6 @@ export const demoCreatePaymentRateLimiter = rateLimit({
   },
 });
 
-export const apiKeySignupRateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: "Too many API key signup requests, please try again later",
-    code: "RATE_LIMIT_EXCEEDED",
-  },
-});
-
 export const authSignupRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,

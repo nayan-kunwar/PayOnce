@@ -69,21 +69,7 @@ All `/api/v1/*` routes require an API key:
 Authorization: Bearer dev-api-key
 ```
 
-### Get your own API key
-
-Use the website signup section (home page) or call:
-
-```http
-POST /api/keys
-Content-Type: application/json
-
-{
-  "email": "dev@example.com",
-  "label": "My app"
-}
-```
-
-You receive the full key once. Save it securely and use it on `/api/v1/*`.
+Create an account at **`/login`**, then generate personal API keys from the **`/dashboard`**.
 
 ### User account and dashboard
 
@@ -219,7 +205,6 @@ See [.env.example](./.env.example) for a local Docker template and [.env.product
 | `REDIS_URL` | Redis connection string |
 | `API_KEYS` | Comma-separated API keys (server-only; not exposed to `/demo`) |
 | `DEMO_ENABLED` | Enable public demo API at `/demo/api` (default `true`; set `false` to disable) |
-| `SIGNUP_ENABLED` | Enable key signup endpoint at `/api/keys` (default `true`; set `false` to disable) |
 | `SESSION_COOKIE_NAME` | Cookie name for user session auth (default `payonce_session`) |
 | `SESSION_TTL_HOURS` | Session lifetime in hours (default 168) |
 | `IDEMPOTENCY_TTL_SECONDS` | Idempotency TTL (default 86400) |
